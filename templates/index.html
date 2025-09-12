@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Informations</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Styles cinématiques / HUD */
+    .neon { text-shadow: 0 0 8px rgba(59,130,246,0.6), 0 0 20px rgba(59,130,246,0.12); }
+    .glass { backdrop-filter: blur(6px); background: linear-gradient(180deg, rgba(17,24,39,0.45), rgba(17,24,39,0.35)); border: 1px solid rgba(255,255,255,0.03); }
+    .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(59,130,246,0.6), transparent); animation: scan 2.3s linear infinite; mix-blend-mode: overlay; }
+    @keyframes scan { 0%{top:-5%;opacity:0}10%{opacity:1}50%{top:50%;opacity:0.9}100%{top:105%;opacity:0} }
+    .box { border: 2px dashed rgba(59,130,246,0.8); box-shadow: 0 0 16px rgba(59,130,246,0.12); position: absolute; pointer-events: none; }
+    .typewriter { overflow: hidden; white-space: nowrap; border-right: .12em solid rgba(59,130,246,0.6); animation: typing 2.8s steps(40,end), blink-caret .8s step-end infinite; }
+    @keyframes typing { from { width: 0 } to { width: 100% } } @keyframes blink-caret { 50% { border-color: rgba(59,130,246,0.6) } }
+  </style>
+</head>
+<body class="bg-gray-900 text-slate-200 antialiased min-h-screen">
+
+  <header class="w-full flex items-center justify-between px-6 py-3 border-b border-slate-800">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center text-lg font-bold text-white">R</div>
+      <div>
+        <div class="text-sm text-slate-400">Recon </div>
+        <div class="text-lg neon font-medium">Cyber Muss Digital</div>
+      </div>
+    </div>
+    <div class="text-xs text-slate-400">© 2025 — Usage autorisé seulement</div>
+  </header>
+
+  <main class="p-6 grid grid-cols-12 gap-6">
+
+    <!-- Left: Upload + inputs -->
+    <section class="col-span-5 flex flex-col gap-6">
+      <!-- Upload card -->
+      <div class="glass p-4 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-slate-400">Cible — Upload</div>
+            <div class="text-lg font-semibold neon">Importer photo / informations</div>
+          </div>
+          <div class="text-xs text-slate-400">Mode HUD</div>
+        </div>
+
+        <div id="dropArea" class="mt-4 border-2 border-dashed border-slate-700 rounded-lg p-4 flex flex-col items-center justify-center gap-3 text-center bg-black/40 cursor-pointer">
+          <input id="fileInput" type="file" accept="image/*" class="hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16l-4-4m0 0l4-4m-4 4h18" /></svg>
+          <div class="text-sm text-slate-400">Déposez une image ici ou cliquez pour choisir</div>
+          <div class="text-xs text-slate-500">Formats: jpg, png. Taille max: 10MB</div>
+        </div>
+
+        <div id="previewWrap" class="mt-4 relative hidden rounded-md overflow-hidden border border-slate-700">
+          <img id="previewImg" src="" alt="preview" class="object-cover w-full h-64 bg-black">
+          <div id="bbox" class="box hidden"></div>
+          <div class="scan-line"></div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-1 gap-2">
+          <label class="text-xs text-slate-400">Nom complet</label>
+          <input id="nameInput" type="text" placeholder="Ex: John Doe" class="px-3 py-2 bg-transparent border border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100">
+          <label class="text-xs text-slate-400">Email</label>
+          <input id="emailInput" type="email" placeholder="ex: john@example.com" class="px-3 py-2 bg-transparent border border-slate-700 rounded-md focus:outline-none text-slate-100">
+          <label class="text-xs text-slate-400">Téléphone</label>
+          <input id="phoneInput" type="tel" placeholder="+237 6xx xxx xxx" class="px-3 py-2 bg-transparent border border-slate-700 rounded-md focus:outline-none text-slate-100">
+          <label class="text-xs text-slate-400">Username / Handle</label>
+          <input id="userInput" type="text" placeholder="@johndoe" class="px-3 py-2 bg-transparent border border-slate-700 rounded-md focus:outline-none text-slate-100">
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button id="scanBtn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md">Lancer le scan</button>
+          <button id="clearBtn" class="px-4 py-2 bg-slate-800 rounded-md">Effacer</button>
+        </div>
+      </div>
+
+      <!-- Logs -->
+      <div class="glass p-3 rounded-lg h-48 overflow-auto">
+        <div class="text-xs text-slate-400 mb-2">Journal d'analyse</div>
+        <div id="logArea" class="text-xs text-slate-300 leading-6">
+          <div>⚡ Système prêt</div>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="glass p-3 rounded-lg">
+        <div class="text-xs text-slate-400 mb-2">Options</div>
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-slate-400">Mode temps réel</label>
+          <input id="realtime" type="checkbox" checked class="accent-blue-500" />
+        </div>
+        <div class="mt-3 text-xs text-slate-400">Note: Cette interface est pour usage légal: pentest autorisé, formation, ou enquête autorisée.</div>
+      </div>
+    </section>
+
+    <!-- Middle: big preview (visual) -->
+    <section class="col-span-4 relative">
+      <div class="glass p-3 rounded-lg h-full flex flex-col">
+        <div class="text-xs text-slate-400 mb-2">Preview visuelle</div>
+        <div id="bigPreview" class="relative flex-1 rounded-md overflow-hidden border border-slate-700 bg-black/40 flex items-center justify-center">
+          <div id="emptyHint" class="text-slate-500 text-center">
+            <div class="text-lg">Aucune image</div>
+            <div class="text-xs mt-2">Importez une photo pour voir le bounding box et l'overlay HUD</div>
+          </div>
+          <img id="bigImg" src="" alt="big preview" class="object-contain w-full h-full hidden">
+          <div id="bigBbox" class="box hidden"></div>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Results -->
+    <aside class="col-span-3 flex flex-col gap-6">
+      <div class="glass p-3 rounded-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs text-slate-400">Résultats</div>
+            <div class="text-lg font-semibold neon" id="resultTitle">Aucun scan</div>
+          </div>
+          <div class="text-xs text-slate-400">Confidence</div>
+        </div>
+
+        <div class="mt-3 h-64 overflow-auto" id="resultsList">
+          <!-- items injected -->
+          <div class="text-xs text-slate-500 mt-4">Lancez un scan pour afficher les résultats.</div>
+        </div>
+
+        <div class="mt-3 flex gap-2">
+          <button id="exportCsv" class="flex-1 px-3 py-2 bg-slate-800 rounded-md text-sm">Exporter CSV</button>
+          <button id="exportPdf" class="px-3 py-2 bg-slate-800 rounded-md text-sm">Exporter PDF</button>
+        </div>
+      </div>
+
+      <div class="glass p-3 rounded-lg">
+        <div class="text-xs text-slate-400">Détails</div>
+        <div id="detailArea" class="mt-2 text-sm text-slate-300 space-y-2">
+          <div><strong>Emails:</strong> <span id="emails">—</span></div>
+          <div><strong>Téléphones:</strong> <span id="phones">—</span></div>
+          <div><strong>Liens:</strong> <span id="links">—</span></div>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <footer class="text-xs text-slate-500 text-center py-4 border-t border-slate-800">
+    © 2025 iZen — From Zenvagam co-founder Muss Digital
+  </footer>
+
+  <script>
+    // Éléments
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const previewWrap = document.getElementById('previewWrap');
+    const previewImg = document.getElementById('previewImg');
+    const bigImg = document.getElementById('bigImg');
+    const emptyHint = document.getElementById('emptyHint');
+    const scanBtn = document.getElementById('scanBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const logArea = document.getElementById('logArea');
+    const resultsList = document.getElementById('resultsList');
+    const resultTitle = document.getElementById('resultTitle');
+    const emailsEl = document.getElementById('emails');
+    const phonesEl = document.getElementById('phones');
+    const linksEl = document.getElementById('links');
+    const bbox = document.getElementById('bbox');
+    const bigBbox = document.getElementById('bigBbox');
+
+    // Inputs
+    const nameInput = document.getElementById('nameInput');
+    const emailInput = document.getElementById('emailInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const userInput = document.getElementById('userInput');
+
+    let currentFile = null;
+
+    function appendLog(text) {
+      const d = document.createElement('div');
+      d.textContent = new Date().toLocaleTimeString() + ' — ' + text;
+      logArea.appendChild(d);
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    // Drag & drop
+    dropArea.addEventListener('click', () => fileInput.click());
+    dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.classList.add('ring-2','ring-blue-500'); });
+    dropArea.addEventListener('dragleave', () => { dropArea.classList.remove('ring-2','ring-blue-500'); });
+    dropArea.addEventListener('drop', (e) => {
+      e.preventDefault(); dropArea.classList.remove('ring-2','ring-blue-500');
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) handleFile(f);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) { alert('Fichier non image'); return; }
+      currentFile = file;
+      const url = URL.createObjectURL(file);
+      previewImg.src = url;
+      previewWrap.classList.remove('hidden');
+      bigImg.src = url; bigImg.classList.remove('hidden'); emptyHint.classList.add('hidden');
+      // reset bbox visibility
+      bbox.classList.add('hidden'); bigBbox.classList.add('hidden');
+      appendLog('Image importée: ' + file.name);
+    }
+
+    // Clear
+    clearBtn.addEventListener('click', () => {
+      currentFile = null;
+      previewImg.src = '';
+      bigImg.src = '';
+      previewWrap.classList.add('hidden');
+      bigImg.classList.add('hidden');
+      emptyHint.classList.remove('hidden');
+      nameInput.value = emailInput.value = phoneInput.value = userInput.value = '';
+      resultsList.innerHTML = '<div class="text-xs text-slate-500 mt-4">Lancez un scan pour afficher les résultats.</div>';
+      emailsEl.textContent = phonesEl.textContent = linksEl.textContent = '—';
+      appendLog('Interface réinitialisée');
+    });
+
+    // Scan
+    scanBtn.addEventListener('click', async () => {
+      const queryName = nameInput.value.trim();
+      const queryEmail = emailInput.value.trim();
+      const queryPhone = phoneInput.value.trim();
+      const queryUser = userInput.value.trim();
+
+      if (!currentFile && !queryName && !queryEmail && !queryPhone && !queryUser) {
+        alert('Ajoute une photo ou une information à rechercher.');
+        return;
+      }
+
+      appendLog('Lancement du scan...');
+      scanBtn.disabled = true;
+
+      // Préparer FormData
+      const fd = new FormData();
+      if (currentFile) fd.append('image', currentFile);
+      fd.append('name', queryName);
+      fd.append('email', queryEmail);
+      fd.append('phone', queryPhone);
+      fd.append('username', queryUser);
+
+      try {
+        // Appel à ton endpoint Flask
+        const resp = await fetch('/api/search', { method: 'POST', body: fd });
+        if (!resp.ok) throw new Error('API non disponible');
+        const data = await resp.json();
+        appendLog('Résultats reçus (' + (data.matches?.length || 0) + ' matches)');
+        updateUIFromData(data);
+      } catch (err) {
+        appendLog('API indisponible — affichage démo');
+        const demo = getDemoData(queryName || queryEmail || queryUser);
+        updateUIFromData(demo);
+      } finally {
+        scanBtn.disabled = false;
+      }
+    });
+
+    function updateUIFromData(data) {
+      // Title
+      resultTitle.textContent = data.targetName || 'Cible: ' + (nameInput.value || '—');
+
+      // Matches list
+      resultsList.innerHTML = '';
+      if (data.matches && data.matches.length) {
+        data.matches.forEach(m => {
+          const item = document.createElement('div');
+          item.className = 'p-2 rounded-md hover:bg-slate-800 transition text-sm flex justify-between items-center';
+          item.innerHTML = `
+            <div>
+              <div class="font-medium text-blue-300">${m.name} <span class="text-xs text-slate-400">— ${m.source}</span></div>
+              <div class="text-xs text-slate-500">${m.handle || ''}</div>
+            </div>
+            <div class="text-xs text-slate-400">${m.confidence}%</div>
+          `;
+          resultsList.appendChild(item);
+        });
+      } else {
+        resultsList.innerHTML = '<div class="text-xs text-slate-500 mt-4">Aucun match trouvé.</div>';
+      }
+
+      // Details
+      emailsEl.textContent = (data.emails && data.emails.length) ? data.emails.join(', ') : '—';
+      phonesEl.textContent = (data.phones && data.phones.length) ? data.phones.join(', ') : '—';
+      linksEl.innerHTML = (data.links && data.links.length) ? data.links.map(l => `<div><a class="text-blue-300 underline" href="${l}" target="_blank" rel="noreferrer">${l}</a></div>`).join('') : '—';
+
+      // Bounding box if present (values in percent)
+      if (data.bbox) {
+        setBox(bbox, data.bbox, previewWrap);
+        setBox(bigBbox, data.bbox, document.getElementById('bigPreview'));
+      } else {
+        bbox.classList.add('hidden'); bigBbox.classList.add('hidden');
+      }
+    }
+
+    // position box relative to container
+    function setBox(el, bboxPercent, container) {
+      el.classList.remove('hidden');
+      // container might be previewWrap or bigPreview — compute container dims
+      const rect = container.getBoundingClientRect();
+      // Use percent values from API (left, top, width, height)
+      el.style.left = bboxPercent.left + '%';
+      el.style.top = bboxPercent.top + '%';
+      el.style.width = bboxPercent.width + '%';
+      el.style.height = bboxPercent.height + '%';
+    }
+
+    // Demo data
+    function getDemoData(query) {
+      return {
+        targetName: query || 'Demo Target',
+        emails: ["demo.user+"+ (query||'x') +"@example.com"],
+        phones: ["+237 699 99 99 99"],
+        links: ["https://twitter.com/demo_user", "https://www.linkedin.com/in/demo-user"],
+        matches: [
+          { name: "John Doe", source: "Twitter", handle: "@johndoe", confidence: 87 },
+          { name: "Jonathan D.", source: "LinkedIn", handle: "jonathan-doe", confidence: 74 }
+        ],
+        // left/top/width/height in percent relative to image/container
+        bbox: { left: 20, top: 18, width: 28, height: 42 }
+      };
+    }
+
+    // Exports placeholder
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      alert('Export CSV: implémenter côté backend (Flask -> pandas.to_csv).');
+    });
+    document.getElementById('exportPdf').addEventListener('click', () => {
+      alert('Export PDF: implémenter côté backend (Flask -> reportlab/wkhtmltopdf).');
+    });
+
+    // Init logs
+    appendLog('Interface prête.');
+  </script>
+</body>
+</html>
